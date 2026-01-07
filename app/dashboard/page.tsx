@@ -15,6 +15,8 @@ import {
   Target,
   FileText,
   Menu,
+  CheckCircle,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -172,7 +174,7 @@ export default function DashboardPage() {
 
   const navItems = [
     { id: "overview", label: "Dashboard", icon: TrendingUp },
-    { id: "insights", label: "Analisis", icon: PieChart },
+    { id: "insights", label: "Análisis", icon: PieChart },
     { id: "budgets", label: "Presupuestos", icon: Wallet },
     { id: "goals", label: "Metas", icon: Target },
     { id: "reports", label: "Reportes", icon: FileText },
@@ -189,12 +191,15 @@ export default function DashboardPage() {
               <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
                 <Menu className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-primary rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-black" />
+              <button
+                onClick={() => router.push("/")}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-lg font-bold hidden sm:block">JEEV</span>
-              </div>
+                <span className="text-lg font-bold hidden sm:block">JEVV</span>
+              </button>
             </div>
 
             <nav className="hidden lg:flex items-center gap-1">
@@ -212,10 +217,7 @@ export default function DashboardPage() {
             </nav>
 
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </Button>
+              <NotificationBell />
               <Button variant="ghost" size="icon" onClick={() => router.push("/settings")}>
                 <Settings className="w-5 h-5" />
               </Button>
@@ -363,6 +365,128 @@ export default function DashboardPage() {
         {activeTab === "reports" && <ReportsDashboard transactions={transactions} />}
         {activeTab === "accounts" && <AccountsDashboard />}
       </main>
+    </div>
+  )
+}
+
+function NotificationBell() {
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: "Nuevo ingreso registrado",
+      message: "Se ha registrado un ingreso de $3,500",
+      time: "Hace 5 min",
+      read: false,
+      type: "success",
+    },
+    {
+      id: 2,
+      title: "Presupuesto alcanzado",
+      message: "Has alcanzado el 80% de tu presupuesto mensual",
+      time: "Hace 2 horas",
+      read: false,
+      type: "warning",
+    },
+    {
+      id: 3,
+      title: "Meta completada",
+      message: "¡Felicidades! Completaste tu meta de ahorro",
+      time: "Ayer",
+      read: true,
+      type: "success",
+    },
+  ])
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  const markAsRead = (id: number) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  }
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }
+
+  const deleteNotification = (id: number) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
+  }
+
+  return (
+    <div className="relative">
+      <Button variant="ghost" size="icon" className="relative" onClick={() => setShowNotifications(!showNotifications)}>
+        <Bell className="w-5 h-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
+            {unreadCount}
+          </span>
+        )}
+      </Button>
+
+      {showNotifications && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setShowNotifications(false)} />
+          <div className="absolute right-0 top-12 w-80 glass border rounded-xl shadow-xl z-40 max-h-96 overflow-y-auto">
+            <div className="p-4 border-b flex items-center justify-between sticky top-0 glass">
+              <h3 className="font-semibold">Notificaciones</h3>
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs">
+                  Marcar todas como leídas
+                </Button>
+              )}
+            </div>
+
+            <div className="divide-y">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                  <p>No tienes notificaciones</p>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className={`p-4 hover:bg-accent/50 transition-colors ${!notif.read ? "bg-primary/5" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className={`text-sm font-medium ${!notif.read ? "font-bold" : ""}`}>{notif.title}</h4>
+                          {!notif.read && <div className="w-2 h-2 bg-primary rounded-full" />}
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{notif.message}</p>
+                        <p className="text-xs text-muted-foreground">{notif.time}</p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {!notif.read && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markAsRead(notif.id)}
+                            className="h-6 w-6 p-0"
+                            title="Marcar como leída"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteNotification(notif.id)}
+                          className="h-6 w-6 p-0"
+                          title="Eliminar"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

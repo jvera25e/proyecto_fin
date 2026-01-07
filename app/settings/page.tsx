@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Moon, Sun, UserIcon, Shield, Bell, Lock, Fingerprint, Camera, Save } from "lucide-react"
@@ -27,6 +29,8 @@ export default function SettingsPage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string>("")
 
   // Profile form state
   const [name, setName] = useState("")
@@ -54,6 +58,7 @@ export default function SettingsPage() {
     setEmail(parsedUser.email || "")
     setPhone(parsedUser.phone || "")
     setBiometricEnabled(parsedUser.biometricEnabled || false)
+    setAvatarPreview(parsedUser.avatar || "")
   }, [router])
 
   const handleSaveProfile = () => {
@@ -127,6 +132,41 @@ export default function SettingsPage() {
     setConfirmPassword("")
   }
 
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("La imagen debe ser menor a 2MB")
+        return
+      }
+
+      if (!file.type.startsWith("image/")) {
+        alert("Solo se permiten imágenes")
+        return
+      }
+
+      setAvatarFile(file)
+
+      // Crear preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string)
+
+        // Guardar en el usuario
+        if (user) {
+          const updatedUser = {
+            ...user,
+            avatar: reader.result as string,
+          }
+          localStorage.setItem("user", JSON.stringify(updatedUser))
+          setUser(updatedUser)
+          alert("Foto de perfil actualizada correctamente")
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   if (!user || !mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -164,11 +204,18 @@ export default function SettingsPage() {
               {/* Avatar */}
               <div className="flex items-center gap-6">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={user.avatar || "/placeholder.svg"} />
+                  <AvatarImage src={avatarPreview || user.avatar || "/placeholder.svg"} />
                   <AvatarFallback className="bg-gradient-primary text-white text-2xl">{name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm">
+                  <input
+                    type="file"
+                    id="avatar-upload"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  <Button variant="outline" size="sm" onClick={() => document.getElementById("avatar-upload")?.click()}>
                     <Camera className="w-4 h-4 mr-2" />
                     Cambiar foto
                   </Button>

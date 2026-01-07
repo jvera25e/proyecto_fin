@@ -6,9 +6,9 @@
 
 Copia `.env.example` a `.env.local` y completa los valores:
 
-```bash
+\`\`\`bash
 cp .env.example .env.local
-```
+\`\`\`
 
 #### Obtener credenciales OAuth:
 
@@ -27,7 +27,7 @@ cp .env.example .env.local
 
 ### 2. Deploy en Vercel (Recomendado)
 
-```bash
+\`\`\`bash
 # Instalar Vercel CLI
 npm i -g vercel
 
@@ -36,7 +36,7 @@ vercel login
 
 # Deploy
 vercel --prod
-```
+\`\`\`
 
 #### Configurar en Vercel:
 1. Conecta tu repositorio de GitHub
@@ -46,7 +46,7 @@ vercel --prod
 
 ### 3. Deploy en Netlify
 
-```bash
+\`\`\`bash
 # Instalar Netlify CLI
 npm i -g netlify-cli
 
@@ -55,7 +55,7 @@ netlify login
 
 # Deploy
 netlify deploy --prod
-```
+\`\`\`
 
 ### 4. Deploy en Railway
 
@@ -90,7 +90,7 @@ netlify deploy --prod
 
 ### 7. Optimizaciones
 
-```bash
+\`\`\`bash
 # Analizar bundle
 npm run build
 npx @next/bundle-analyzer
@@ -100,7 +100,7 @@ npm install sharp
 
 # Comprimir assets
 # Vercel lo hace automáticamente
-```
+\`\`\`
 
 ### 8. Monitoreo
 
@@ -113,7 +113,7 @@ Configura:
 
 Crea `.github/workflows/deploy.yml`:
 
-```yaml
+\`\`\`yaml
 name: Deploy
 on:
   push:
@@ -132,7 +132,7 @@ jobs:
           vercel-org-id: ${{ secrets.ORG_ID }}
           vercel-project-id: ${{ secrets.PROJECT_ID }}
           vercel-args: '--prod'
-```
+\`\`\`
 
 ### 10. Post-Deploy Checklist
 
@@ -149,7 +149,7 @@ jobs:
 
 ## Comandos Útiles
 
-```bash
+\`\`\`bash
 # Development
 npm run dev
 
@@ -164,7 +164,7 @@ npm run db:seed
 
 # Lint
 npm run lint
-```
+\`\`\`
 
 ## Soporte
 

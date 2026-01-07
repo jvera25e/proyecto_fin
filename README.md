@@ -48,23 +48,23 @@ Una aplicación web moderna y segura para la gestión de finanzas personales con
 ### Pasos
 
 1. **Clonar el repositorio**
-```bash
+\`\`\`bash
 git clone [URL_DEL_REPO]
 cd financial-app
-```
+\`\`\`
 
 2. **Instalar dependencias**
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 3. **Configurar variables de entorno**
-```bash
+\`\`\`bash
 cp .env.local.example .env.local
-```
+\`\`\`
 
 Editar `.env.local` con tus credenciales:
-```env
+\`\`\`env
 DATABASE_URL=postgresql://usuario:password@localhost:5432/financial_app
 NEXTAUTH_SECRET=genera-con-openssl-rand-base64-32
 NEXTAUTH_URL=http://localhost:3000
@@ -74,18 +74,18 @@ GOOGLE_CLIENT_SECRET=tu-google-client-secret
 
 APPLE_CLIENT_ID=tu-apple-client-id
 APPLE_CLIENT_SECRET=tu-apple-client-secret
-```
+\`\`\`
 
 4. **Configurar base de datos**
-```bash
+\`\`\`bash
 npm run db:schema
 npm run db:seed
-```
+\`\`\`
 
 5. **Ejecutar en desarrollo**
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 Abrir [http://localhost:3000](http://localhost:3000)
 
@@ -115,23 +115,23 @@ Abrir [http://localhost:3000](http://localhost:3000)
 ### Opción 1: Vercel (Recomendado)
 
 1. **Instalar Vercel CLI**
-```bash
+\`\`\`bash
 npm i -g vercel
-```
+\`\`\`
 
 2. **Deployar**
-```bash
+\`\`\`bash
 vercel
-```
+\`\`\`
 
 3. **Configurar variables de entorno** en el dashboard de Vercel
 
 4. **Configurar base de datos** (Neon recomendado):
-```bash
+\`\`\`bash
 # Crear proyecto en https://neon.tech
 # Copiar connection string
 # Agregar a Vercel como DATABASE_URL
-```
+\`\`\`
 
 ### Opción 2: Netlify
 
@@ -164,7 +164,7 @@ Puntos críticos:
 
 ## Scripts Disponibles
 
-```bash
+\`\`\`bash
 npm run dev          # Desarrollo local
 npm run build        # Build de producción
 npm start            # Servidor de producción
@@ -173,11 +173,11 @@ npm run type-check   # Verificar TypeScript
 npm run db:schema    # Crear tablas de base de datos
 npm run db:seed      # Insertar datos de prueba
 npm run db:reset     # Resetear base de datos
-```
+\`\`\`
 
 ## Estructura del Proyecto
 
-```
+\`\`\`
 financial-app/
 ├── app/                    # App Router de Next.js
 │   ├── api/               # API routes
@@ -194,7 +194,7 @@ financial-app/
 ├── scripts/              # Scripts de BD
 ├── public/               # Assets estáticos
 └── styles/               # CSS global
-```
+\`\`\`
 
 ## Uso de la Aplicación
 

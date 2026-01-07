@@ -100,6 +100,26 @@ export function AIInsights({ transactions }: AIInsightsProps) {
     }
   }
 
+  const translateType = (type: string) => {
+    const translations: Record<string, string> = {
+      saving: "Ahorro",
+      budget: "Presupuesto",
+      warning: "Advertencia",
+      opportunity: "Oportunidad",
+      goal: "Meta",
+    }
+    return translations[type] || type
+  }
+
+  const translateImpact = (impact: string) => {
+    const translations: Record<string, string> = {
+      high: "Alto impacto",
+      medium: "Impacto medio",
+      low: "Bajo impacto",
+    }
+    return translations[impact] || impact
+  }
+
   if (loading) {
     return (
       <Card className="w-full">
@@ -142,7 +162,7 @@ export function AIInsights({ transactions }: AIInsightsProps) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-purple-600" />
-            <CardTitle>Insights Financieros con IA</CardTitle>
+            <CardTitle>Análisis Financiero</CardTitle>
           </div>
           <CardDescription>Análisis inteligente de tus patrones financieros</CardDescription>
         </CardHeader>
@@ -214,10 +234,10 @@ export function AIInsights({ transactions }: AIInsightsProps) {
                   <div className="flex items-center gap-2">
                     <Badge className={getRecommendationColor(recommendation.type)}>
                       {getRecommendationIcon(recommendation.type)}
-                      {recommendation.type}
+                      {translateType(recommendation.type)}
                     </Badge>
                     <Badge variant="outline" className={getImpactColor(recommendation.impact)}>
-                      {recommendation.impact} impact
+                      {translateImpact(recommendation.impact)}
                     </Badge>
                   </div>
                   {recommendation.potentialSaving && (

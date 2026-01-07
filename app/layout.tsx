@@ -11,7 +11,7 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "MoneyFlow - Tu gestor financiero personal",
+  title: "JEVV - Tu gestor financiero personal",
   description: "Controla tus finanzas con inteligencia, seguridad biométrica y análisis avanzados.",
   generator: "v0.dev",
 }
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.node
+  children: React.ReactNode
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
