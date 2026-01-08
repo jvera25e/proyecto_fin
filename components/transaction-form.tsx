@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -19,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { PlusCircle, MinusCircle, CalendarIcon, DollarSign, Tag, FileText, CreditCard } from "lucide-react"
+import { PlusCircle, MinusCircle, CalendarIcon, DollarSign, Tag, FileText } from "lucide-react"
 import { transactionsService } from "@/lib/supabase/services"
 import { useToast } from "@/hooks/use-toast"
 
@@ -44,8 +43,6 @@ const categories = [
   "Otros",
 ]
 
-const accounts = ["Cuenta Corriente", "Cuenta de Ahorros", "Tarjeta de Crédito", "Efectivo", "PayPal"]
-
 export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [type, setType] = useState<"income" | "expense">("expense")
@@ -53,9 +50,7 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
     description: "",
     amount: "",
     category: "",
-    account: "",
     date: new Date(),
-    notes: "",
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const { toast } = useToast()
@@ -78,24 +73,13 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
       newErrors.category = "Selecciona una categoría"
     }
 
-    if (!formData.account) {
-      newErrors.account = "Selecciona una cuenta"
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
-
     try {
       const transaction = await transactionsService.create({
         description: formData.description,
         amount: type === "expense" ? -Number.parseFloat(formData.amount) : Number.parseFloat(formData.amount),
         category: formData.category,
-        account: formData.account,
         date: formData.date.toISOString(),
         type,
-        notes: formData.notes || undefined,
       })
 
       onAddTransaction(transaction)
@@ -110,9 +94,7 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
         description: "",
         amount: "",
         category: "",
-        account: "",
         date: new Date(),
-        notes: "",
       })
       setErrors({})
       setIsOpen(false)
@@ -242,42 +224,6 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
               </Select>
               {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
             </div>
-
-            {/* Cuenta */}
-            <div>
-              <Label htmlFor="account">Cuenta *</Label>
-              <Select
-                value={formData.account}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, account: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cuenta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((account) => (
-                    <SelectItem key={account} value={account}>
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4" />
-                        {account}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.account && <p className="text-red-500 text-sm mt-1">{errors.account}</p>}
-            </div>
-
-            {/* Notas */}
-            <div className="md:col-span-2">
-              <Label htmlFor="notes">Notas (opcional)</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder="Información adicional sobre esta transacción..."
-                rows={3}
-              />
-            </div>
           </div>
 
           {/* Preview */}
@@ -294,10 +240,7 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
                 {type === "income" ? "+" : "-"}${formData.amount || "0.00"}
               </div>
             </div>
-            <div className="text-sm text-gray-500 mt-2">
-              {formData.category && <span>📁 {formData.category}</span>}
-              {formData.account && <span className="ml-4">💳 {formData.account}</span>}
-            </div>
+            <div className="text-sm text-gray-500 mt-2">{formData.category && <span>📁 {formData.category}</span>}</div>
           </div>
 
           <div className="flex gap-3">
