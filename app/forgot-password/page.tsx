@@ -12,7 +12,7 @@ export default function ForgotPasswordPage() {
         </p>
 
         <Link
-          href="/login"
+          href="/dashboard"
           className="text-blue-600 hover:underline text-sm font-medium"
         >
           Volver al inicio de sesión
