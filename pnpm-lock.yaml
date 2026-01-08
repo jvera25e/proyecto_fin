@@ -173,6 +173,9 @@ importers:
       sswr:
         specifier: latest
         version: 2.2.0(svelte@5.46.1)
+      swr:
+        specifier: 2.3.8
+        version: 2.3.8(react@18.0.0)
       tailwind-merge:
         specifier: ^2.5.4
         version: 2.5.4
