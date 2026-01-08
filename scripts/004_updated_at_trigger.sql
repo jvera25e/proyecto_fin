@@ -1,36 +1,31 @@
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION public.handle_updated_at()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
+-- Function to automatically update updated_at timestamp
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
 $$;
 
--- Add triggers to all tables
-CREATE TRIGGER profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_updated_at();
+-- Triggers for all tables
+create trigger handle_profiles_updated_at
+  before update on public.profiles
+  for each row
+  execute function public.handle_updated_at();
 
-CREATE TRIGGER accounts_updated_at
-  BEFORE UPDATE ON public.accounts
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_updated_at();
+create trigger handle_transactions_updated_at
+  before update on public.transactions
+  for each row
+  execute function public.handle_updated_at();
 
-CREATE TRIGGER transactions_updated_at
-  BEFORE UPDATE ON public.transactions
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_updated_at();
+create trigger handle_financial_goals_updated_at
+  before update on public.financial_goals
+  for each row
+  execute function public.handle_updated_at();
 
-CREATE TRIGGER budgets_updated_at
-  BEFORE UPDATE ON public.budgets
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_updated_at();
-
-CREATE TRIGGER goals_updated_at
-  BEFORE UPDATE ON public.goals
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_updated_at();
+create trigger handle_cards_updated_at
+  before update on public.cards
+  for each row
+  execute function public.handle_updated_at();

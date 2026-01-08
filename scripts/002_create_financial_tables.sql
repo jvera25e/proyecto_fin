@@ -1,123 +1,101 @@
--- Accounts table
-CREATE TABLE IF NOT EXISTS public.accounts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL, -- 'checking', 'savings', 'credit', 'investment'
-  balance DECIMAL(12, 2) DEFAULT 0,
-  currency TEXT DEFAULT 'USD',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own accounts"
-  ON public.accounts FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own accounts"
-  ON public.accounts FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own accounts"
-  ON public.accounts FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own accounts"
-  ON public.accounts FOR DELETE
-  USING (auth.uid() = user_id);
-
 -- Transactions table
-CREATE TABLE IF NOT EXISTS public.transactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  account_id UUID REFERENCES public.accounts(id) ON DELETE CASCADE,
-  type TEXT NOT NULL, -- 'income', 'expense'
-  category TEXT NOT NULL,
-  amount DECIMAL(12, 2) NOT NULL,
-  description TEXT,
-  date DATE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+create table if not exists public.transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type text not null check (type in ('income', 'expense')),
+  amount decimal(12, 2) not null,
+  category text not null,
+  description text,
+  date timestamp with time zone not null default now(),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own transactions"
-  ON public.transactions FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own transactions"
-  ON public.transactions FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own transactions"
-  ON public.transactions FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own transactions"
-  ON public.transactions FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Budgets table
-CREATE TABLE IF NOT EXISTS public.budgets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  category TEXT NOT NULL,
-  amount DECIMAL(12, 2) NOT NULL,
-  period TEXT NOT NULL, -- 'monthly', 'weekly', 'yearly'
-  start_date DATE NOT NULL,
-  end_date DATE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Financial goals table
+create table if not exists public.financial_goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  target_amount decimal(12, 2) not null,
+  current_amount decimal(12, 2) default 0,
+  deadline timestamp with time zone,
+  category text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own budgets"
-  ON public.budgets FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own budgets"
-  ON public.budgets FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own budgets"
-  ON public.budgets FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own budgets"
-  ON public.budgets FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Goals table
-CREATE TABLE IF NOT EXISTS public.goals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  target_amount DECIMAL(12, 2) NOT NULL,
-  current_amount DECIMAL(12, 2) DEFAULT 0,
-  deadline DATE,
-  status TEXT DEFAULT 'active', -- 'active', 'completed', 'cancelled'
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Cards table
+create table if not exists public.cards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  card_name text not null,
+  card_number text not null,
+  card_type text not null check (card_type in ('credit', 'debit')),
+  balance decimal(12, 2) default 0,
+  limit_amount decimal(12, 2),
+  expiry_date text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on all tables
+alter table public.transactions enable row level security;
+alter table public.financial_goals enable row level security;
+alter table public.cards enable row level security;
 
-CREATE POLICY "Users can view their own goals"
-  ON public.goals FOR SELECT
-  USING (auth.uid() = user_id);
+-- RLS Policies for transactions
+create policy "Users can view their own transactions"
+  on public.transactions for select
+  using (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own goals"
-  ON public.goals FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+create policy "Users can insert their own transactions"
+  on public.transactions for insert
+  with check (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own goals"
-  ON public.goals FOR UPDATE
-  USING (auth.uid() = user_id);
+create policy "Users can update their own transactions"
+  on public.transactions for update
+  using (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own goals"
-  ON public.goals FOR DELETE
-  USING (auth.uid() = user_id);
+create policy "Users can delete their own transactions"
+  on public.transactions for delete
+  using (auth.uid() = user_id);
+
+-- RLS Policies for financial_goals
+create policy "Users can view their own goals"
+  on public.financial_goals for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own goals"
+  on public.financial_goals for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own goals"
+  on public.financial_goals for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own goals"
+  on public.financial_goals for delete
+  using (auth.uid() = user_id);
+
+-- RLS Policies for cards
+create policy "Users can view their own cards"
+  on public.cards for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own cards"
+  on public.cards for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own cards"
+  on public.cards for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own cards"
+  on public.cards for delete
+  using (auth.uid() = user_id);
+
+-- Create indexes for better performance
+create index if not exists transactions_user_id_idx on public.transactions(user_id);
+create index if not exists transactions_date_idx on public.transactions(date);
+create index if not exists financial_goals_user_id_idx on public.financial_goals(user_id);
+create index if not exists cards_user_id_idx on public.cards(user_id);

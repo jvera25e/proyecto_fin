@@ -13,7 +13,7 @@ export async function createClient() {
         try {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
         } catch {
-          // Middleware will handle session refresh
+          // Ignore if called from Server Component
         }
       },
     },

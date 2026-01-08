@@ -1,26 +1,28 @@
--- Auto-create profile when user signs up
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, email)
-  VALUES (
+-- Function to auto-create profile on user signup
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, first_name, last_name)
+  values (
     new.id,
-    COALESCE(new.raw_user_meta_data ->> 'full_name', ''),
-    new.email
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'first_name', null),
+    coalesce(new.raw_user_meta_data ->> 'last_name', null)
   )
-  ON CONFLICT (id) DO NOTHING;
+  on conflict (id) do nothing;
 
-  RETURN new;
-END;
+  return new;
+end;
 $$;
 
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+-- Trigger to execute function on user creation
+drop trigger if exists on_auth_user_created on auth.users;
 
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_user();
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row
+  execute function public.handle_new_user();

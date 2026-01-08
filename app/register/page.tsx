@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Mail, Lock, User, Wallet, ArrowRight, CheckCircle } from "lucide-react"
 import { FaceCaptureModal } from "@/components/face-capture-modal"
+import { createClient } from "@/lib/supabase/client"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -86,54 +87,52 @@ export default function RegisterPage() {
       return
     }
 
-    setIsLoading(false)
-    setShowFaceCapture(true)
+    try {
+      const supabase = createClient()
+
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+          },
+        },
+      })
+
+      if (error) throw error
+
+      // Show face capture modal after successful signup
+      setIsLoading(false)
+      setShowFaceCapture(true)
+    } catch (error: any) {
+      setErrors({ general: error.message || "Error al crear la cuenta" })
+      setIsLoading(false)
+    }
   }
 
   const handleFaceCaptureSuccess = async (faceData: string) => {
-    setIsLoading(true)
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email: formData.email,
-          name: `${formData.firstName} ${formData.lastName}`,
-          registrationTime: new Date().toISOString(),
-          faceData: faceData.substring(0, 100),
-          biometricEnabled: true,
-        }),
-      )
-
-      router.push("/dashboard")
-    } catch (error) {
-      setErrors({ general: "Error al crear la cuenta. Intenta nuevamente." })
-      setShowFaceCapture(false)
-    } finally {
-      setIsLoading(false)
-    }
+    // After face capture, redirect to dashboard
+    router.push("/dashboard")
   }
 
   const handleSocialLogin = async (provider: string) => {
     setIsLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const supabase = createClient()
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email: `user@${provider}.com`,
-          name: `Usuario ${provider}`,
-          registrationTime: new Date().toISOString(),
-          provider: provider,
-        }),
-      )
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      })
 
-      router.push("/dashboard")
-    } catch (error) {
-      setErrors({ general: `Error al conectar con ${provider}` })
-    } finally {
+      if (error) throw error
+    } catch (error: any) {
+      setErrors({ general: error.message || `Error al conectar con ${provider}` })
       setIsLoading(false)
     }
   }

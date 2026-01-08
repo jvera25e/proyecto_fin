@@ -1,30 +1,27 @@
--- Create profiles table
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name TEXT,
-  email TEXT,
-  phone TEXT,
-  avatar_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Create profiles table linked to auth.users
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  first_name text,
+  last_name text,
+  avatar_url text,
+  phone text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+-- Enable Row Level Security
+alter table public.profiles enable row level security;
 
--- RLS Policies for profiles
-CREATE POLICY "Users can view their own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
+-- Create policies for profiles
+create policy "Users can view their own profile"
+  on public.profiles for select
+  using (auth.uid() = id);
 
-CREATE POLICY "Users can insert their own profile"
-  ON public.profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
+create policy "Users can update their own profile"
+  on public.profiles for update
+  using (auth.uid() = id);
 
-CREATE POLICY "Users can update their own profile"
-  ON public.profiles FOR UPDATE
-  USING (auth.uid() = id);
-
-CREATE POLICY "Users can delete their own profile"
-  ON public.profiles FOR DELETE
-  USING (auth.uid() = id);
+create policy "Users can insert their own profile"
+  on public.profiles for insert
+  with check (auth.uid() = id);

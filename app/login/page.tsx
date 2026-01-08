@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Mail, Lock, Wallet, Shield } from "lucide-react"
 import { FaceCaptureModal } from "@/components/face-capture-modal"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -44,43 +45,46 @@ export default function LoginPage() {
       return
     }
 
-    setIsLoading(false)
-    setShowFaceCapture(true)
+    try {
+      const supabase = createClient()
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      if (error) throw error
+
+      // Optionally verify face after successful login
+      if (data.user) {
+        setIsLoading(false)
+        setShowFaceCapture(true)
+      }
+    } catch (error: any) {
+      setErrors({ general: error.message || "Error al iniciar sesión" })
+      setIsLoading(false)
+    }
   }
 
   const handleFaceVerificationSuccess = (faceData: string) => {
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        email: formData.email,
-        name: "Usuario",
-        loginTime: new Date().toISOString(),
-        biometricEnabled: true,
-        loginMethod: "face",
-      }),
-    )
     router.push("/dashboard")
   }
 
   const handleSocialLogin = async (provider: string) => {
     setIsLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const supabase = createClient()
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email: `user@${provider}.com`,
-          name: `Usuario ${provider}`,
-          loginTime: new Date().toISOString(),
-          provider: provider,
-        }),
-      )
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      })
 
-      router.push("/dashboard")
-    } catch (error) {
-      setErrors({ general: `Error al conectar con ${provider}` })
-    } finally {
+      if (error) throw error
+    } catch (error: any) {
+      setErrors({ general: error.message || `Error al conectar con ${provider}` })
       setIsLoading(false)
     }
   }
