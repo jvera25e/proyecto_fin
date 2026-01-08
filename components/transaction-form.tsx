@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { PlusCircle, MinusCircle, CalendarIcon, DollarSign, Tag, FileText, CreditCard } from "lucide-react"
+import { transactionsService } from "@/lib/supabase/services"
+import { useToast } from "@/hooks/use-toast"
 
 const formatDate = (date: Date): string => {
   return date.toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
@@ -56,8 +58,9 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
     notes: "",
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const { toast } = useToast()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validación
@@ -84,31 +87,43 @@ export function TransactionForm({ onAddTransaction }: TransactionFormProps) {
       return
     }
 
-    // Crear transacción
-    const transaction = {
-      id: `trans_${Date.now()}`,
-      description: formData.description,
-      amount: type === "expense" ? -Number.parseFloat(formData.amount) : Number.parseFloat(formData.amount),
-      category: formData.category,
-      account: formData.account,
-      date: formData.date.toISOString(),
-      type,
-      notes: formData.notes,
+    try {
+      const transaction = await transactionsService.create({
+        description: formData.description,
+        amount: type === "expense" ? -Number.parseFloat(formData.amount) : Number.parseFloat(formData.amount),
+        category: formData.category,
+        account: formData.account,
+        date: formData.date.toISOString(),
+        type,
+        notes: formData.notes || undefined,
+      })
+
+      onAddTransaction(transaction)
+
+      toast({
+        title: "Transacción creada",
+        description: "La transacción se guardó correctamente en la base de datos",
+      })
+
+      // Reset form
+      setFormData({
+        description: "",
+        amount: "",
+        category: "",
+        account: "",
+        date: new Date(),
+        notes: "",
+      })
+      setErrors({})
+      setIsOpen(false)
+    } catch (error) {
+      console.error("Error creating transaction:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la transacción. Intenta de nuevo.",
+        variant: "destructive",
+      })
     }
-
-    onAddTransaction(transaction)
-
-    // Reset form
-    setFormData({
-      description: "",
-      amount: "",
-      category: "",
-      account: "",
-      date: new Date(),
-      notes: "",
-    })
-    setErrors({})
-    setIsOpen(false)
   }
 
   return (

@@ -1,6 +1,10 @@
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserClient as createBrowserClientSSR } from "@supabase/ssr"
 
-export function createClient() {
+let client: ReturnType<typeof createBrowserClientSSR> | null = null
+
+export function createBrowserClient() {
+  if (client) return client
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -11,5 +15,10 @@ export function createClient() {
     )
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  client = createBrowserClientSSR(supabaseUrl, supabaseAnonKey)
+  return client
+}
+
+export function createClient() {
+  return createBrowserClient()
 }
