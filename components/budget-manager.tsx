@@ -16,15 +16,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { PlusCircle, AlertTriangle, CheckCircle, TrendingUp, DollarSign, Target, Settings } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { PlusCircle, AlertTriangle, CheckCircle, DollarSign, Target, Settings, Trash2, Eye } from "lucide-react"
 import { BudgetManager, type Budget, type BudgetAlert } from "@/lib/budget-manager"
 import { formatCurrency } from "@/lib/ai-recommendations"
 
 interface BudgetManagerComponentProps {
   transactions: any[]
+  userId: string
 }
 
-export function BudgetManagerComponent({ transactions }: BudgetManagerComponentProps) {
+export function BudgetManagerComponent({ transactions, userId }: BudgetManagerComponentProps) {
   const [budgetManager] = useState(() => new BudgetManager([], transactions))
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [alerts, setAlerts] = useState<BudgetAlert[]>([])
@@ -34,61 +45,100 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
     limit: "",
     period: "monthly" as "monthly" | "weekly" | "yearly",
   })
+  const [loading, setLoading] = useState(true)
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
+  const [budgetToDelete, setBudgetToDelete] = useState<string | null>(null)
+  const [viewingBudget, setViewingBudget] = useState<Budget | null>(null)
 
   useEffect(() => {
-    // Cargar presupuestos existentes (en producción vendría de la base de datos)
-    const existingBudgets: Budget[] = [
-      {
-        id: "budget_1",
-        category: "Alimentación",
-        limit: 500,
-        spent: 320,
-        period: "monthly",
-        startDate: new Date(2024, 0, 1).toISOString(),
-        endDate: new Date(2024, 0, 31).toISOString(),
-        status: "warning",
-        notifications: true,
-      },
-      {
-        id: "budget_2",
-        category: "Transporte",
-        limit: 200,
-        spent: 150,
-        period: "monthly",
-        startDate: new Date(2024, 0, 1).toISOString(),
-        endDate: new Date(2024, 0, 31).toISOString(),
-        status: "on_track",
-        notifications: true,
-      },
-      {
-        id: "budget_3",
-        category: "Entretenimiento",
-        limit: 150,
-        spent: 180,
-        period: "monthly",
-        startDate: new Date(2024, 0, 1).toISOString(),
-        endDate: new Date(2024, 0, 31).toISOString(),
-        status: "exceeded",
-        notifications: true,
-      },
-    ]
+    const loadBudgets = () => {
+      const storedBudgets = localStorage.getItem(`budgets_${userId}`)
+      const budgetsData = storedBudgets ? JSON.parse(storedBudgets) : []
 
-    setBudgets(existingBudgets)
+      const categorySpending: { [key: string]: number } = {}
+      transactions
+        .filter((t) => t.type === "expense")
+        .forEach((t) => {
+          const cat = t.category
+          categorySpending[cat] = (categorySpending[cat] || 0) + Math.abs(t.amount)
+        })
 
-    // Generar alertas
-    const budgetManagerWithData = new BudgetManager(existingBudgets, transactions)
-    const generatedAlerts = budgetManagerWithData.generateAlerts()
-    setAlerts(generatedAlerts)
-  }, [transactions])
+      const formattedBudgets: Budget[] = budgetsData.map((b: any) => {
+        const spent = categorySpending[b.category] || 0
+        const percentage = (spent / Number(b.limit)) * 100
+
+        let status: Budget["status"] = "on_track"
+        if (percentage >= 100) status = "exceeded"
+        else if (percentage >= 80) status = "warning"
+
+        return {
+          id: b.id,
+          category: b.category,
+          limit: Number(b.limit),
+          spent,
+          period: b.period as "monthly" | "weekly" | "yearly",
+          startDate: new Date().toISOString(),
+          endDate: new Date().toISOString(),
+          status,
+          notifications: true,
+        }
+      })
+
+      setBudgets(formattedBudgets)
+
+      const budgetManagerWithData = new BudgetManager(formattedBudgets, transactions)
+      const generatedAlerts = budgetManagerWithData.generateAlerts()
+      setAlerts(generatedAlerts)
+
+      setLoading(false)
+    }
+
+    loadBudgets()
+  }, [transactions, userId])
+
+  const saveBudgets = (newBudgets: Budget[]) => {
+    const budgetsToSave = newBudgets.map((b) => ({
+      id: b.id,
+      category: b.category,
+      limit: b.limit,
+      period: b.period,
+    }))
+    localStorage.setItem(`budgets_${userId}`, JSON.stringify(budgetsToSave))
+  }
 
   const handleCreateBudget = () => {
     if (!newBudget.category || !newBudget.limit) return
 
     const budget = budgetManager.createBudget(newBudget.category, Number.parseFloat(newBudget.limit), newBudget.period)
 
-    setBudgets((prev) => [...prev, budget])
+    const updatedBudgets = [...budgets, budget]
+    setBudgets(updatedBudgets)
+    saveBudgets(updatedBudgets)
     setNewBudget({ category: "", limit: "", period: "monthly" })
     setIsCreateDialogOpen(false)
+  }
+
+  const handleEditBudget = () => {
+    if (!editingBudget) return
+
+    const updatedBudgets = budgets.map((b) => (b.id === editingBudget.id ? editingBudget : b))
+    setBudgets(updatedBudgets)
+    saveBudgets(updatedBudgets)
+    setEditingBudget(null)
+  }
+
+  const handleDeleteBudget = (budgetId: string) => {
+    const updatedBudgets = budgets.filter((b) => b.id !== budgetId)
+    setBudgets(updatedBudgets)
+    saveBudgets(updatedBudgets)
+    setBudgetToDelete(null)
+  }
+
+  const handleCreateFromSuggestion = (suggestion: any) => {
+    const budget = budgetManager.createBudget(suggestion.category, suggestion.suggestedLimit, "monthly")
+    const updatedBudgets = [...budgets, budget]
+    setBudgets(updatedBudgets)
+    saveBudgets(updatedBudgets)
   }
 
   const getBudgetStatusColor = (status: Budget["status"]) => {
@@ -120,9 +170,16 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
   const summary = budgetManager.getBudgetSummary()
   const suggestions = budgetManager.suggestBudgets()
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      {/* Resumen de Presupuestos */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -211,7 +268,6 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
             </div>
           </div>
 
-          {/* Estado de Presupuestos */}
           <div className="flex gap-4 mb-4">
             <Badge className="bg-green-100 text-green-800">
               <CheckCircle className="w-3 h-3 mr-1" />
@@ -229,7 +285,6 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
         </CardContent>
       </Card>
 
-      {/* Alertas de Presupuesto */}
       {alerts.length > 0 && (
         <Card>
           <CardHeader>
@@ -265,7 +320,6 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
         </Card>
       )}
 
-      {/* Lista de Presupuestos */}
       <Card>
         <CardHeader>
           <CardTitle>Presupuestos Activos</CardTitle>
@@ -313,13 +367,17 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
                   </div>
 
                   <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setEditingBudget(budget)}>
                       <Settings className="w-3 h-3 mr-1" />
                       Editar
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <TrendingUp className="w-3 h-3 mr-1" />
+                    <Button variant="outline" size="sm" onClick={() => setViewingBudget(budget)}>
+                      <Eye className="w-3 h-3 mr-1" />
                       Ver detalles
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBudgetToDelete(budget.id)}>
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Eliminar
                     </Button>
                   </div>
                 </div>
@@ -329,7 +387,6 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
         </CardContent>
       </Card>
 
-      {/* Sugerencias de Presupuesto */}
       {suggestions.length > 0 && (
         <Card>
           <CardHeader>
@@ -349,7 +406,12 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
                   </div>
                   <div className="text-right">
                     <div className="font-semibold">{formatCurrency(suggestion.suggestedLimit)}</div>
-                    <Button variant="outline" size="sm" className="mt-1 bg-transparent">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-1 bg-transparent"
+                      onClick={() => handleCreateFromSuggestion(suggestion)}
+                    >
                       Crear
                     </Button>
                   </div>
@@ -359,6 +421,128 @@ export function BudgetManagerComponent({ transactions }: BudgetManagerComponentP
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Budget Dialog */}
+      <Dialog open={!!editingBudget} onOpenChange={() => setEditingBudget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Presupuesto</DialogTitle>
+            <DialogDescription>Modifica los detalles de tu presupuesto</DialogDescription>
+          </DialogHeader>
+          {editingBudget && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-category">Categoría</Label>
+                <Input
+                  id="edit-category"
+                  value={editingBudget.category}
+                  onChange={(e) => setEditingBudget({ ...editingBudget, category: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-limit">Límite de Gasto</Label>
+                <Input
+                  id="edit-limit"
+                  type="number"
+                  value={editingBudget.limit}
+                  onChange={(e) => setEditingBudget({ ...editingBudget, limit: Number.parseFloat(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-period">Período</Label>
+                <Select
+                  value={editingBudget.period}
+                  onValueChange={(value: any) => setEditingBudget({ ...editingBudget, period: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                    <SelectItem value="monthly">Mensual</SelectItem>
+                    <SelectItem value="yearly">Anual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleEditBudget} className="w-full">
+                Guardar Cambios
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Budget Details Dialog */}
+      <Dialog open={!!viewingBudget} onOpenChange={() => setViewingBudget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalles del Presupuesto</DialogTitle>
+          </DialogHeader>
+          {viewingBudget && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-500">Categoría</Label>
+                  <p className="font-semibold">{viewingBudget.category}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Período</Label>
+                  <p className="font-semibold capitalize">{viewingBudget.period}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Límite</Label>
+                  <p className="font-semibold">{formatCurrency(viewingBudget.limit)}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Gastado</Label>
+                  <p className="font-semibold">{formatCurrency(viewingBudget.spent)}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Restante</Label>
+                  <p className="font-semibold">{formatCurrency(viewingBudget.limit - viewingBudget.spent)}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Estado</Label>
+                  <Badge className={getBudgetStatusColor(viewingBudget.status)}>
+                    {getBudgetStatusIcon(viewingBudget.status)}
+                    {viewingBudget.status === "on_track" && "En camino"}
+                    {viewingBudget.status === "warning" && "Advertencia"}
+                    {viewingBudget.status === "exceeded" && "Excedido"}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <Label className="text-gray-500">Progreso</Label>
+                <Progress
+                  value={Math.min((viewingBudget.spent / viewingBudget.limit) * 100, 100)}
+                  className="h-2 mt-2"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {((viewingBudget.spent / viewingBudget.limit) * 100).toFixed(1)}% usado
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!budgetToDelete} onOpenChange={() => setBudgetToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar presupuesto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El presupuesto será eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => budgetToDelete && handleDeleteBudget(budgetToDelete)}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
